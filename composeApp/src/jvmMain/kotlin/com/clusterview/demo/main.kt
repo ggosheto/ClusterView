@@ -3,6 +3,8 @@ package com.clusterview.demo
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 
+
+
 fun main() = application {
     // Initialize DB before window starts
     DatabaseManager.initDatabase()
