@@ -1,0 +1,16 @@
+ To Do List :
+    - Implement user authentication
+    - Configure the Export Button --- DONE
+    - Add data visualization features
+    - Add More Pages
+    - Improve UI/UX design
+    - Change fonts
+    - Automatic File Saving & Folder Creation --- DONE
+    - Add Settings Page
+    - Optimize functionality
+    - Add Clustering
+    - Test on different platforms
+    - Gather user feedback
+    - Fix bugs and issues
+    - Prepare for release
+    - Write documentation

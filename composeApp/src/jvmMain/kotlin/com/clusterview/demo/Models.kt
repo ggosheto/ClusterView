@@ -7,7 +7,8 @@ data class FileEntry(
     val extension: String,
     val size: Long,
     val lastModified: Long,
-    val clusterId: Int? = null
+    val clusterId: Int? = null,
+    var isStarred: Boolean = false
 )
 
 data class Cluster(

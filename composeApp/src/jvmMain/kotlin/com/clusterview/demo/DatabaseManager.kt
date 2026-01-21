@@ -7,7 +7,20 @@ import java.sql.ResultSet
 object DatabaseManager {
     private const val DB_URL = "jdbc:sqlite:clusterview.db"
 
-    fun getConnection(): Connection = DriverManager.getConnection(DB_URL)
+    // Hold one active connection instead of opening/closing constantly
+    private var connection: Connection? = null
+
+    fun getConnection(): Connection {
+        if (connection == null || connection!!.isClosed) {
+            connection = DriverManager.getConnection(DB_URL)
+        }
+        return connection!!
+    }
+
+    // Call this only when the app completely closes
+    fun closeDatabase() {
+        connection?.close()
+    }
 
     fun initDatabase() {
         getConnection().use { conn ->
@@ -185,4 +198,68 @@ object DatabaseManager {
         }
         return files
     }
+
+    fun getClusterIdForExtension(extension: String): Int {
+        return when (extension.lowercase()) {
+            "jpg", "png", "gif", "svg" -> 1 // Images
+            "pdf", "docx", "txt", "xlsx" -> 2 // Documents
+            "mp4", "mov", "avi" -> 3 // Video
+            "mp3", "wav", "flac" -> 4 // Audio
+            else -> 5 // Miscellaneous
+        }
+    }
+
+    fun seedClusters() {
+        val categories = listOf(
+            "Images" to "#FFD2B48C",    // Galactic Tan
+            "Documents" to "#FF4FC3F7", // Tech Blue
+            "Video" to "#FFBA68C8",     // Nebula Purple
+            "Audio" to "#FFFF8A65",     // Sun Flare Orange
+            "Archive" to "#FF90A4AE"    // Space Gray
+        )
+
+        getConnection().use { conn ->
+            val sql = "INSERT OR IGNORE INTO clusters (id, name, color) VALUES (?, ?, ?)"
+            conn.prepareStatement(sql).use { pstmt ->
+                categories.forEachIndexed { index, pair ->
+                    pstmt.setInt(1, index + 1)
+                    pstmt.setString(2, pair.first)
+                    pstmt.setString(3, pair.second)
+                    pstmt.addBatch()
+                }
+                pstmt.executeBatch()
+            }
+        }
+    }
+
+    fun getClusterStats(clusterId: Int): Pair<Int, Long> {
+        var count = 0
+        var totalSize = 0L
+        val sql = "SELECT COUNT(*), SUM(size) FROM files WHERE cluster_id = ?"
+
+        getConnection().use { conn ->
+            conn.prepareStatement(sql).use { pstmt ->
+                pstmt.setInt(1, clusterId)
+                val rs = pstmt.executeQuery()
+                if (rs.next()) {
+                    count = rs.getInt(1)
+                    totalSize = rs.getLong(2)
+                }
+            }
+        }
+        return Pair(count, totalSize)
+    }
+
+    /*fun updateFileStar(fileId: Int, currentStatus: Boolean) {
+        val status = if (isStarred) 1 else 0
+        val sql = "UPDATE files SET is_starred = ? WHERE id = ?"
+        getConnection().use { conn ->
+            conn.prepareStatement(sql).use { pstmt ->
+                pstmt.setInt(1, newStatus)
+                pstmt.setInt(2, fileId)
+                pstmt.executeUpdate()
+            }
+        }
+    }*/
 }
+

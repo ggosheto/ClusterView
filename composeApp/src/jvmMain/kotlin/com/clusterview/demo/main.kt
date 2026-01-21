@@ -2,18 +2,24 @@ package com.clusterview.demo
 
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.rememberWindowState
+import androidx.compose.ui.window.Window
 
 
 
 fun main() = application {
-    // Initialize DB before window starts
-    DatabaseManager.initDatabase()
+    // Set the window size to a cinematic wide ratio
+    val windowState = rememberWindowState(width = 1200.dp, height = 800.dp)
 
-    // Test Insert (You can remove this after checking)
-    DatabaseManager.insertFile(FileEntry(name = "Test.txt", path = "C:/Test.txt", extension = "txt", size = 1024, lastModified = 0))
-    println("Files in DB: ${DatabaseManager.getAllFiles().size}")
-
-    Window(onCloseRequest = ::exitApplication, title = "ClusterView") {
+    Window(
+        onCloseRequest = ::exitApplication,
+        state = windowState,
+        title = "CLUSTER VIEW // SYSTEM ARCHIVE",
+        undecorated = false // Keep this false for now so you can close it easily
+    ) {
+        // THIS IS THE KEY:
+        // It must call App() and nothing else.
         App()
     }
 }

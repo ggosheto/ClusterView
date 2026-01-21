@@ -18,11 +18,79 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+//import com.clusterview.openFolderPicker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import com.clusterview.demo.FileScanner.scanFolder
 
 @Composable
 fun App() {
+
+    // 1. STATE MANAGEMENT
+    // We start with "home". Changing this string changes the whole screen.
+    var currentScreen by remember { mutableStateOf("home") }
+
+    // Data holders to pass information between screens
+    var selectedClusterName by remember { mutableStateOf("") }
+    var loadedFiles by remember { mutableStateOf(listOf<FileEntry>()) }
+
+    // 2. THE NAVIGATION SWITCH
+    // This 'when' block is the brain that decides which view to render
+    when (currentScreen) {
+
+        "home" -> {
+            HomeView(onImportClick = {
+                val path = openFolderPicker()
+                if (path != null) {
+                    selectedClusterName = java.io.File(path).name
+
+                    // --- THE CLEANING PHASE ---
+                    // Call this first to reset the DB for the new scan
+                    DatabaseManager.clearAllData()
+
+                    // --- THE SCANNING PHASE ---
+                    // Now that the DB is empty, we fill it with new data
+                    FileScanner.scanFolder(path, onProgress = { progress ->
+                        println("Scanning: $progress%")
+                    })
+
+                    // --- THE LOADING PHASE ---
+                    loadedFiles = DatabaseManager.getAllFiles()
+                    currentScreen = "list"
+                }
+            })
+        }
+
+        /*"list" -> {
+            FileListView(
+                clusterName = selectedClusterName,
+                files = loadedFiles,
+                onBack = {
+                    // This allows the user to return to the futuristic landing page
+                    currentScreen = "home"
+                },
+                onSearch = { query ->
+                    // Your search logic here
+                }
+            )
+        }*/
+
+
+        "list" -> {
+            FileListView(
+                clusterName = selectedClusterName, // Matches your state variable
+                files = loadedFiles,               // Matches your state variable
+                onBack = { currentScreen = "home" },
+                onSearch = { query ->
+                    // Restores your original search logic
+                    loadedFiles = DatabaseManager.getAllFiles().filter {
+                        it.name.contains(query, ignoreCase = true)
+                    }
+                }
+            )
+        }
+    }
+
     // --- COLORS ---
     val OxfordBlue = Color(0, 33, 71)
     val Tan = Color(210, 180, 140)
@@ -38,7 +106,7 @@ fun App() {
     var selectedCluster by remember { mutableStateOf<ClusterSummary?>(null) }
     var filesInCluster by remember { mutableStateOf(listOf<FileEntry>()) }
 
-    MaterialTheme {
+    /*MaterialTheme {
         Row(Modifier.fillMaxSize().background(LightGrayBg)) {
 
             // --- SIDEBAR (Oxford Blue) ---
@@ -96,7 +164,7 @@ fun App() {
                             isScanning = true
                             scope.launch(Dispatchers.IO) {
                                 DatabaseManager.clearAllData()
-                                FileScanner.scanFolder(path) { /* progress update */ }
+                                FileScanner.scanFolder(path) { *//* progress update *//* }
                                 ClusterLogic.generateInitialClusters()
                                 clusters = DatabaseManager.getClusterSummaries()
                                 statusText = "Last scan: Success"
@@ -193,5 +261,5 @@ fun App() {
                 }
             }
         }
-    }
+    }*/
 }

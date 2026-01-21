@@ -1,9 +1,24 @@
-package com.clusterview.demo
+package com.clusterview.demo // Ensure this matches your package name
 
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
 
-val OxfordBlue = Color(0, 33, 71)      // Main background & Sidebar
-val Tan = Color(210, 180, 140)         // Accents, buttons, and highlights
-val OffWhite = Color(0xFFF5F5F5)       // Main content area background
-val DeepBlueText = Color(0xFF001A38)   // Text on Tan or White surfaces
-val MutedTan = Color(0xFFD2B48C).copy(alpha = 0.7f)
+// 1. CINEMATIC COLORS
+val DeepSpace = Color(0xFF00050A)    // The near-black "void"
+val OxfordBlue = Color(0xFF002147)   // Your core brand blue
+val GalacticTan = Color(0xFFD2B48C)  // Your "starlight" accent
+val NebulaGlow = Color(0xFF001A33)    // Subtle highlight for depth
+
+// 2. THE DYNAMIC BACKGROUND BRUSH
+// This creates the "Nebula" effect from your reference image
+val SpaceBackground = Brush.radialGradient(
+    0.0f to NebulaGlow,
+    1.0f to DeepSpace,
+    center = Offset(0.5f, 0.2f), // Shifts the "glow" slightly to the top
+    radius = 1500f
+)
+
+// 3. GLASSMORPHISM HELPER
+val GlassWhite = Color.White.copy(alpha = 0.05f)
+val GlassBorder = Color.White.copy(alpha = 0.15f)
