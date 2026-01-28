@@ -320,12 +320,69 @@ fun FileListView(
 @Composable
 fun DistributionBar(files: List<FileEntry>) {
     if (files.isEmpty()) return
-    val stats = files.groupBy { it.extension.lowercase() }.mapValues { it.value.size.toFloat() / files.size }.toList().sortedByDescending { it.second }.take(3)
-    val colors = listOf(AccentColor, Color(0xFF5DADE2), Color(0xFF58D68D))
+
+    // 1. Calculate stats based on TOTAL BYTES, not just count
+    val totalClusterSize = remember(files) { files.sumOf { it.size } }
+
+    val weightStats = remember(files, totalClusterSize) {
+        if (totalClusterSize == 0L) return@remember emptyList<Pair<String, Float>>()
+
+        files.groupBy { it.extension.lowercase() }
+            .mapValues { (_, fileGroup) ->
+                fileGroup.sumOf { it.size }.toFloat() / totalClusterSize
+            }
+            .toList()
+            .sortedByDescending { it.second }
+            .take(4) // Increased to 4 for better detail
+    }
+
+    val colors = listOf(AccentColor, Color(0xFF5DADE2), Color(0xFF58D68D), Color(0xFFF4D03F))
 
     Column(Modifier.padding(top = 16.dp)) {
-        Row(Modifier.fillMaxWidth().height(6.dp).clip(CircleShape).background(Color.Gray.copy(0.1f))) {
-            stats.forEachIndexed { i, s -> Box(Modifier.weight(s.second).fillMaxHeight().background(colors.getOrElse(i) { Color.Gray })) }
+        Text(
+            text = "STORAGE COMPOSITION",
+            color = AccentColor.copy(0.5f),
+            style = MaterialTheme.typography.overline,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        // --- THE PROPORTIONAL BAR ---
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(12.dp) // Slightly thicker for a modern look
+                .clip(RoundedCornerShape(4.dp))
+                .background(Color.Gray.copy(0.1f))
+        ) {
+            weightStats.forEachIndexed { i, s ->
+                Box(
+                    Modifier
+                        .weight(s.second.coerceAtLeast(0.01f)) // Ensure even tiny files show a sliver
+                        .fillMaxHeight()
+                        .background(colors.getOrElse(i) { Color.Gray })
+                )
+            }
+        }
+
+        // --- THE DATA LEGEND ---
+        FlowRow(
+            modifier = Modifier.padding(top = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp), // Use horizontalArrangement
+            verticalArrangement = Arrangement.spacedBy(8.dp)     // Use verticalArrangement
+        ) {
+            weightStats.forEachIndexed { i, s ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(10.dp).clip(CircleShape).background(colors[i]))
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        // Now shows how much SPACE it takes, not just count
+                        text = "${s.first.uppercase()} ${(s.second * 100).toInt()}%",
+                        color = Color.White.copy(0.8f),
+                        style = MaterialTheme.typography.caption,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
         }
     }
 }

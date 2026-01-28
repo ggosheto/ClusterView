@@ -23,73 +23,87 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.clusterview.demo.FileScanner.scanFolder
 
+// 1. DATA MODELS (Ensures "Cannot infer type" errors stop)
+/*data class User(val id: Int, val email: String, val username: String)
+data class ClusterSummary(val id: Int, val name: String, val fileCount: Int)
+data class FileEntry(val name: String, val path: String, val size: Long, val extension: String)*/
+
 @Composable
 fun App() {
-
-    // 1. STATE MANAGEMENT
-    // We start with "home". Changing this string changes the whole screen.
-    var currentScreen by remember { mutableStateOf("home") }
-
-    // Data holders to pass information between screens
+    // --- 2. STATE MANAGEMENT ---
+    var currentScreen by remember { mutableStateOf("login") }
+    var currentUser by remember { mutableStateOf<User?>(null) }
+    var clusters by remember { mutableStateOf(emptyList<ClusterSummary>()) }
     var selectedClusterName by remember { mutableStateOf("") }
-    var loadedFiles by remember { mutableStateOf(listOf<FileEntry>()) }
+    var loadedFiles by remember { mutableStateOf(emptyList<FileEntry>()) }
 
-    // 2. THE NAVIGATION SWITCH
-    // This 'when' block is the brain that decides which view to render
-    when (currentScreen) {
-
-        "home" -> {
-            HomeView(onImportClick = {
-                val path = openFolderPicker()
-                if (path != null) {
-                    selectedClusterName = java.io.File(path).name
-
-                    // --- THE CLEANING PHASE ---
-                    // Call this first to reset the DB for the new scan
-                    DatabaseManager.clearAllData()
-
-                    // --- THE SCANNING PHASE ---
-                    // Now that the DB is empty, we fill it with new data
-                    FileScanner.scanFolder(path, onProgress = { progress ->
-                        println("Scanning: $progress%")
-                    })
-
-                    // --- THE LOADING PHASE ---
-                    loadedFiles = DatabaseManager.getAllFiles()
-                    currentScreen = "list"
-                }
-            })
-        }
-
-        /*"list" -> {
-            FileListView(
-                clusterName = selectedClusterName,
-                files = loadedFiles,
-                onBack = {
-                    // This allows the user to return to the futuristic landing page
-                    currentScreen = "home"
-                },
-                onSearch = { query ->
-                    // Your search logic here
-                }
-            )
-        }*/
-
-
-        "list" -> {
-            FileListView(
-                clusterName = selectedClusterName, // Matches your state variable
-                files = loadedFiles,               // Matches your state variable
-                onBack = { currentScreen = "home" },
-                onSearch = { query ->
-                    // Restores your original search logic
-                    loadedFiles = DatabaseManager.getAllFiles().filter {
-                        it.name.contains(query, ignoreCase = true)
-                    }
-                }
-            )
+    // --- 3. PERSISTENCE CHECK ---
+    LaunchedEffect(Unit) {
+        if (AuthManager.isUserRemembered()) {
+            val userId = AuthManager.getSavedUserId()
+            // Using a safe null check to avoid type mismatch
+            val user = DatabaseManager.getUserById(userId) as? User
+            if (user != null) {
+                currentUser = user
+                clusters = DatabaseManager.getClusterSummaries() // Removed 'id' to fix "Too many arguments"
+                currentScreen = "home"
+            }
         }
     }
+
+    // --- 4. NAVIGATION ENGINE ---
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxSize()) {
+            when (currentScreen) {
+                "login" -> LoginView(
+                    onAuthSuccess = { user ->
+                        currentUser = user
+                        currentScreen = "home"
+                    },
+                    onNavigateToSignUp = { currentScreen = "signup" } // Add this parameter to LoginView
+                )
+                "signup" -> SignUpView(
+                    onSignUpSuccess = {
+                        currentScreen = "login" // This is what makes the page change!
+                    },
+                    onNavigateToLogin = {
+                        currentScreen = "login"
+                    }
+                )
+
+                "home" -> HomeView(
+                    user = currentUser,          // Passes the User object you got from login
+                    clusters = clusters,        // Passes the list of clusters to display
+                    onImportClick = {
+
+                        println("Importing new folder...")
+                    },
+                    onClusterClick = { cluster ->
+                        selectedClusterName = cluster.name
+                        currentScreen = "list"
+                    },
+                    onLogout = {
+                        AuthManager.logout()
+                        currentUser = null
+                        currentScreen = "login"
+                    }
+                )
+
+                "list" -> {
+                    FileListView(
+                        clusterName = selectedClusterName,
+                        files = loadedFiles,
+                        onBack = { currentScreen = "home" },
+                        onSearch = { query ->
+                            // Simple filter to avoid DB calls during search
+                            loadedFiles = loadedFiles.filter { it.name.contains(query, ignoreCase = true) }
+                        }
+                    )
+                }
+            }
+        }
+    }
+
 
     // --- COLORS ---
     val OxfordBlue = Color(0, 33, 71)
@@ -98,7 +112,7 @@ fun App() {
 
     // --- STATE MANAGEMENT ---
     val scope = rememberCoroutineScope()
-    var clusters by remember { mutableStateOf(DatabaseManager.getClusterSummaries()) }
+   // var clusters by remember { mutableStateOf(DatabaseManager.getClusterSummaries()) }
     var isScanning by remember { mutableStateOf(false) }
     var statusText by remember { mutableStateOf("System Ready") }
 

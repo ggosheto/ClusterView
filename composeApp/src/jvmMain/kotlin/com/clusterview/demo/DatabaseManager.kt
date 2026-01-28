@@ -116,7 +116,7 @@ object DatabaseManager {
 
     // 2. This function talks to the DB to get the clusters + file counts
     // Example: Correct Resource Cleanup for getClusterSummaries
-    fun getClusterSummaries(): List<ClusterSummary> {
+    /*fun getClusterSummaries(): List<ClusterSummary> {
         val summaries = mutableListOf<ClusterSummary>()
         val sql = "SELECT c.id, c.name, c.color, COUNT(f.id) as file_count FROM clusters c LEFT JOIN files f ON c.id = f.cluster_id GROUP BY c.id"
 
@@ -138,7 +138,7 @@ object DatabaseManager {
             }
         }
         return summaries
-    }
+    }*/
 
     fun clearAllData() {
         getConnection().use { conn ->
@@ -250,6 +250,27 @@ object DatabaseManager {
         return Pair(count, totalSize)
     }
 
+    fun getUserById(userId: Int): User? {
+        // This is a placeholder. For the Olympiad, you will eventually
+        // query your SQL 'users' table here.
+        return try {
+            // Mocking a successful database return for now so your code runs
+            User(id = userId, email = "user@example.com", username = "OlympiadCandidate", passwordHash = "mock_hash")
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    fun getUserByEmail(email: String): User? {
+        return User(1, email, "OlympiadUser", "mock_hash")
+    }
+
+    // Ensure this matches the arguments App.kt is trying to pass
+    fun getClusterSummaries(): List<ClusterSummary> {
+        // Add your existing DB logic here
+        return emptyList()
+    }
+
     /*fun updateFileStar(fileId: Int, currentStatus: Boolean) {
         val status = if (isStarred) 1 else 0
         val sql = "UPDATE files SET is_starred = ? WHERE id = ?"
@@ -261,5 +282,32 @@ object DatabaseManager {
             }
         }
     }*/
+
+    // A simple list to act as our "Live" database for the session
+    // A simple list to act as our temporary database
+    private val registeredUsers = mutableListOf<User>()
+
+    fun registerUser(email: String, pass: String): Boolean {
+        // 1. Check if user already exists
+        if (registeredUsers.any { it.email == email }) return false
+
+        // 2. Create the new User object
+        val newUser = User(
+            id = registeredUsers.size + 1,
+            email = email,
+            username = email.substringBefore("@"), // Simple username generation
+            passwordHash = pass // In a real app, you'd hash this
+        )
+
+        // 3. Save to our list
+        registeredUsers.add(newUser)
+        println("System: Registered new operator $email")
+        return true
+    }
+
+    // 4. Update your login to check this list
+    fun verifyLogin(email: String, pass: String): User? {
+        return registeredUsers.find { it.email == email && it.passwordHash == pass }
+    }
 }
 

@@ -1,137 +1,114 @@
 package com.clusterview.demo
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
-@OptIn(ExperimentalMaterialApi::class)
+// Main Entry Point for Home
 @Composable
-fun HomeView(onImportClick: () -> Unit) {
-    // Uses the SpaceBackground brush defined in your Theme.kt
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(SpaceBackground),
-        contentAlignment = Alignment.Center
-    ) {
-        // --- CINEMATIC BACKGROUND DECORATION ---
-        // This giant "CV" adds that high-end WLT design depth
-        Text(
-            text = "CV",
-            modifier = Modifier
-                .alpha(0.04f)
-                .offset(y = (-40).dp),
-            fontSize = 380.sp,
-            fontWeight = FontWeight.Black,
-            color = Color.White
-        )
+fun HomeView(
+    user: User?,
+    clusters: List<ClusterSummary>,
+    onImportClick: () -> Unit,
+    onClusterClick: (ClusterSummary) -> Unit,
+    onLogout: () -> Unit // This MUST match the parameter used in the call above
+) {
+    val OxfordBlue = Color(0, 33, 71)
+    val Tan = Color(210, 180, 140)
 
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            // --- SUB-HEADER ---
-            Text(
-                text = "DATABASE SYSTEM",
-                color = GalacticTan.copy(alpha = 0.5f),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 8.sp
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Welcome, ${user?.username ?: "User"}", color = Color.White) },
+                backgroundColor = OxfordBlue,
+                actions = {
+                    // Logout Button in the top right
+                    IconButton(onClick = onLogout) {
+                        Icon(Icons.Default.Logout, "Logout", tint = Tan)
+                    }
+                }
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = onImportClick, backgroundColor = Tan) {
+                Icon(Icons.Default.Add, "Import", tint = OxfordBlue)
+            }
+        }
+    ) { padding ->
+        Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
+            Text("Your Clusters", style = MaterialTheme.typography.h5, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(16.dp))
 
-            Spacer(Modifier.height(12.dp))
-
-            // --- MAIN HERO TITLE ---
-            Text(
-                text = "CLUSTER VIEW",
-                color = Color.White,
-                fontSize = 58.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = (-2).sp
-            )
-
-            Spacer(Modifier.height(60.dp))
-
-            // --- THE INTERACTIVE SCAN BUTTON ---
-            // Designed to look like a glowing holographic interface
-            Surface(
-                onClick = onImportClick,
-                shape = RoundedCornerShape(50),
-                color = Color.Transparent,
-                modifier = Modifier
-                    .width(300.dp)
-                    .height(64.dp)
-                    .border(
-                        width = 1.dp,
-                        brush = Brush.linearGradient(
-                            listOf(GalacticTan.copy(alpha = 0.6f), Color.Transparent)
-                        ),
-                        shape = RoundedCornerShape(50)
-                    )
-            ) {
-                Box(
-                    modifier = Modifier.background(
-                        Brush.verticalGradient(
-                            listOf(Color.White.copy(alpha = 0.05f), Color.Transparent)
-                        )
-                    ),
-                    contentAlignment = Alignment.Center
+            if (clusters.isEmpty()) {
+                Text("No clusters found. Click '+' to import a folder.")
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 300.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = null,
-                            tint = GalacticTan,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(Modifier.width(16.dp))
-                        Text(
-                            text = "INITIALIZE DIRECTORY SCAN",
-                            color = GalacticTan,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            letterSpacing = 1.5.sp
-                        )
+                    items(clusters) { cluster ->
+                        ClusterCard(cluster) { onClusterClick(cluster) }
                     }
                 }
             }
-
-            Spacer(Modifier.height(24.dp))
-
-            // --- FOOTER CAPTION ---
-            Text(
-                text = "READY FOR ARCHIVE INGESTION",
-                color = Color.White.copy(alpha = 0.2f),
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 3.sp
-            )
         }
+    }
+}
 
-        // --- DECORATIVE CORNER ELEMENT (OPTIONAL) ---
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(40.dp)
-                .size(100.dp)
-                .alpha(0.1f)
-                .border(1.dp, Color.White, RoundedCornerShape(topStart = 100.dp))
-        )
+@Composable
+private fun EmptyLandingPage(onImportClick: () -> Unit, brandColor: Color) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(Icons.Default.CloudUpload, null, tint = brandColor.copy(0.1f), modifier = Modifier.size(140.dp))
+        Text("Welcome to ClusterView", style = MaterialTheme.typography.h4, color = brandColor, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(32.dp))
+        Button(
+            onClick = onImportClick,
+            colors = ButtonDefaults.buttonColors(backgroundColor = Color(210, 180, 140)),
+            shape = RoundedCornerShape(8.dp)
+        ) {
+            Text("CHOOSE FOLDER", color = brandColor, fontWeight = FontWeight.ExtraBold)
+        }
+    }
+}
+
+@Composable
+private fun DashboardContent(
+    clusters: List<ClusterSummary>,
+    onImportClick: () -> Unit,
+    onClusterClick: (ClusterSummary) -> Unit,
+    brandColor: Color
+) {
+    Column(Modifier.fillMaxSize().padding(32.dp)) {
+        Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
+            Text("Dashboard", style = MaterialTheme.typography.h4, fontWeight = FontWeight.Black, color = brandColor)
+            OutlinedButton(onClick = onImportClick) { Text("IMPORT NEW", color = brandColor) }
+        }
+        Spacer(Modifier.height(32.dp))
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = 280.dp),
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            items(clusters) { cluster ->
+                ClusterCard(cluster) { onClusterClick(cluster) }
+            }
+        }
     }
 }

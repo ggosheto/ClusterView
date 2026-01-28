@@ -14,6 +14,7 @@
     - Fix bugs and issues
     - Prepare for release
     - Write documentation
+
  Pushing to GitHub at the end of each task completion :
     - git add .
     - git commit -m "Implemented [task name]"
